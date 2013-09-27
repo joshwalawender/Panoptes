@@ -14,7 +14,7 @@ import os
 from argparse import ArgumentParser
 import re
 import time
-import subprocess32
+import subprocess
 
 
 help_message = '''
@@ -83,7 +83,7 @@ def main(argv=None):
                         ProcessCall = [PythonString, MeasureImageString, os.path.join(DataPath, File)]
                         print("  %s Calling MeasureImage.py with %s" % (TimeString, ProcessCall[2:]))
                         try:
-                            MIoutput = subprocess32.check_output(ProcessCall, stderr=subprocess32.STDOUT, timeout=150)
+                            MIoutput = subprocess.check_output(ProcessCall, stderr=subprocess.STDOUT, timeout=150)
                             print("Call to MeasureImage.py Succeeded")
                         except:
                             print("Call to MeasureImage.py Failed")
