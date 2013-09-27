@@ -19,15 +19,62 @@ import time
 
 import ephem
 import astropy.units as u
+import astropy.io.fits as fits
 
 import IQMon
 
 
-class ParseError(Exception):
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
+##-------------------------------------------------------------------------
+## Read Skycam Info
+##-------------------------------------------------------------------------
+def ReadSkycamInfo(RawFile, FitsFile):
+    if not os.path.exists(RawFile):
+        raise IOError("Unable to find input file: %s" % RawFile)
+    RawFileDirectory, RawFilename = os.path.split(RawFile)
+    RawBasename, RawExt = os.path.splitext(RawFilename)
+    NightDirectory = os.path.split(RawFileDirectory)[0]
+    DataNightString = os.path.split(os.path.split(RawFileDirectory)[0])[1]
+    InfoDirectory = os.path.join(NightDirectory, "CR2info")
+    InfoFile = os.path.join(InfoDirectory, RawBasename+".info")
+    try:
+        infoFO = open(InfoFile, 'r')
+        infolines = infoFO.read().split("\n")
+    except:
+        print("Trouble reading Info File")
+
+    hdulist = fits.open(FitsFile, mode='update', ignore_missing_end=True)
+    for line in infolines:
+        IsOBJECT = re.match("TARGETDESCRIPTION:\s*(\w+)", line)
+        if IsOBJECT: hdulist[0].header['OBJECT'] = IsOBJECT.group(1)
+        IsEXPTIME = re.match("SHUTTER:\s*(\d+\.?\d*)\ssec", line)
+        if IsEXPTIME: hdulist[0].header['EXPTIME'] = IsEXPTIME.group(1)
+        IsRA = re.match("RA:\s*(\d+\.?\d*)\sdeg", line)
+        if IsRA:
+            RAdecimalhours = float(IsRA.group(1))/15.
+            RAh = int(math.floor(RAdecimalhours))
+            RAm = int(math.floor((RAdecimalhours - RAh)*60.))
+            RAs = ((RAdecimalhours - RAh)*60. - RAm)*60.
+            hdulist[0].header['RA'] = "{:02d}:{:02d}:{:04.1f}".format(RAh, RAm, RAs)
+        IsDEC = re.match("DEC:\s*(\d+\.?\d*)\sdeg", line)
+        if IsDEC:
+            DECdecimal = float(IsDEC.group(1))
+            DECd = int(math.floor(DECdecimal))
+            DECm = int(math.floor((DECdecimal - DECd)*60.))
+            DECs = ((DECdecimal - DECd)*60. - DECm)*60.
+            hdulist[0].header['DEC'] = "{:02d}:{:02d}:{:04.1f}".format(DECd, DECm, DECs)
+        IsUTSTART = re.match("UT_START:\s*(\d+\.?\d*)\shr", line)
+        if IsUTSTART:
+            UTdecimal = float(IsUTSTART.group(1))
+            UTh = int(math.floor(UTdecimal))
+            UTm = int(math.floor((UTdecimal - UTh)*60.))
+            UTs = ((UTdecimal - UTh)*60. - UTm)*60.
+            dateObs = "{}T{:02d}:{:02d}:{:04.1f}".format(DataNightString, UTh, UTm, UTs)
+            hdulist[0].header['DATE-OBS'] = dateObs
+    hdulist[0].header['LAT-OBS'] = 19.53602
+    hdulist[0].header['LONG-OBS'] = -155.57608
+    hdulist[0].header['ALT-OBS'] = 3400
+    hdulist.flush()
+    hdulist.close()
 
 
 ##-------------------------------------------------------------------------
@@ -59,7 +106,8 @@ def main():
     if not os.path.exists(RawFile):
         raise IOError("Unable to find input file: %s" % RawFile)
     RawFileDirectory, RawFilename = os.path.split(RawFile)
-    RawBasename, RawExt = os.path.splitext(FitsFilename)
+    RawBasename, RawExt = os.path.splitext(RawFilename)
+    DataNightString = os.path.split(os.path.split(RawFileDirectory)[0])[1]
 
 
     ##-------------------------------------------------------------------------
@@ -75,14 +123,14 @@ def main():
     tel.name = "Panoptes"
     tel.longName = "Panoptes"
     tel.focalLength = 85.*u.mm
-    tel.pixelSize = 5.0*u.micron     ## Need to determine correct pixel size
-    tel.aperture = 60.7.*u.mm
+    tel.pixelSize = 4.6*u.micron     ## Need to determine correct pixel size
+    tel.aperture = 60.7*u.mm
     tel.gain = 1.6 / u.adu           ## Need to determine correct gain
     tel.unitsForFWHM = 1.*u.pix
-    tel.ROI = "[1024:3072,1024:3072]"
-    tel.thresholdFWHM = 4.0*u.pix
+    tel.ROI = "[1361:3409,565:2613]"
+    tel.thresholdFWHM = 5.0*u.pix
     tel.thresholdPointingErr = 10.0*u.arcmin
-    tel.thresholdEllipticity = 0.30*u.dimensionless_unscaled
+    tel.thresholdEllipticity = 0.35*u.dimensionless_unscaled
     tel.pixelScale = tel.pixelSize.to(u.mm)/tel.focalLength.to(u.mm)*u.radian.to(u.arcsec)*u.arcsec/u.pix
     tel.fRatio = tel.focalLength.to(u.mm)/tel.aperture.to(u.mm)
     tel.SExtractorPhotAperture = 6.0*u.pix
@@ -101,9 +149,9 @@ def main():
     ##-------------------------------------------------------------------------
     ## Create Filenames
     ##-------------------------------------------------------------------------
-    IQMonLogFileName = os.path.join(config.pathLog, tel.longName, DataNightString+"_"+tel.name+"_IQMonLog.txt")
-    htmlImageList = os.path.join(config.pathLog, tel.longName, DataNightString+"_"+tel.name+".html")
-    summaryFile = os.path.join(config.pathLog, tel.longName, DataNightString+"_"+tel.name+"_Summary.txt")
+    IQMonLogFileName = os.path.join(config.pathLog, DataNightString+"_"+tel.name+"_IQMonLog.txt")
+    htmlImageList = os.path.join(config.pathLog, DataNightString+"_"+tel.name+".html")
+    summaryFile = os.path.join(config.pathLog, DataNightString+"_"+tel.name+"_Summary.txt")
     FullFrameJPEG = image.rawFileBasename+"_full.jpg"
     CropFrameJPEG = image.rawFileBasename+"_crop.jpg"
     BackgroundJPEG = image.rawFileBasename+"_bkgnd.jpg"
@@ -112,28 +160,23 @@ def main():
         if os.path.exists(htmlImageList): os.remove(htmlImageList)
         if os.path.exists(summaryFile): os.remove(summaryFile)
 
+
     ##-------------------------------------------------------------------------
     ## Perform Actual Image Analysis
     ##-------------------------------------------------------------------------
     image.MakeLogger(IQMonLogFileName, args.verbose)
-    image.logger.info("###### Processing Image:  %s ######", FitsFilename)
-    image.logger.info("Setting telescope variable to %s", telescope)
+    image.logger.info("###### Processing Image:  %s ######", RawFilename)
     image.ReadImage()           ## Create working copy of image (don't edit raw file!)
+    image.SolveAstrometry() ## Solve Astrometry
+    ReadSkycamInfo(RawFile, image.workingFile)
     image.GetHeader()           ## Extract values from header
-    image.MakeJPEG(FullFrameJPEG, rotate=True, markPointing=True, binning=4)
-    if not image.imageWCS:      ## If no WCS found in header ...
-        image.SolveAstrometry() ## Solve Astrometry
-        image.GetHeader()       ## Refresh Header
+    image.MakeJPEG(FullFrameJPEG, rotate=True, markPointing=True, binning=2)
     image.DeterminePointingError()            ## Calculate Pointing Error
-    darks = ListDarks(image)    ## List dark files
-    if darks and len(darks) > 0:
-        image.DarkSubtract(darks)   ## Dark Subtract Image
     image.Crop()                ## Crop Image
     image.GetHeader()           ## Refresh Header
     image.RunSExtractor()       ## Run SExtractor
     image.DetermineFWHM()       ## Determine FWHM from SExtractor results
-    image.MakeJPEG(CropFrameJPEG, markStars=True, markPointing=True, rotate=True, binning=1)
-#     image.MakeJPEG(BackgroundJPEG, markStars=True, markPointing=False, rotate=True, binning=1, backgroundSubtracted=True)
+    image.MakeJPEG(CropFrameJPEG, rotate=True, markPointing=True, binning=1)
     image.CleanUp()             ## Cleanup (delete) temporary files.
     image.CalculateProcessTime()## Calculate how long it took to process this image
     image.AddWebLogEntry(htmlImageList) ## Add line for this image to HTML table
