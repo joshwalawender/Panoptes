@@ -54,7 +54,7 @@ def main(argv=None):
     ##-------------------------------------------------------------------------
     ## Operation Loop
     ##-------------------------------------------------------------------------
-    PythonString = os.path.join("python")
+    PythonString = os.path.join("/usr/", "bin", "python")
     homePath = os.path.expandvars("$HOME")
     MeasureImageString = os.path.join(homePath, "bin", "Panoptes", "MeasureImage.py")
     Operate = True

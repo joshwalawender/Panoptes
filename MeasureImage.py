@@ -134,7 +134,7 @@ def main():
     tel.pixelScale = tel.pixelSize.to(u.mm)/tel.focalLength.to(u.mm)*u.radian.to(u.arcsec)*u.arcsec/u.pix
     tel.fRatio = tel.focalLength.to(u.mm)/tel.aperture.to(u.mm)
     tel.SExtractorPhotAperture = 6.0*u.pix
-    tel.SExtractorSeeing = 2.0*u.arcsec
+    tel.SExtractorSeeing = tel.pixelScale*u.pix
     tel.SExtractorSaturation = 30000.*u.adu  ## Need to determine correct gain
     ## Define Site (ephem site object)
     tel.site = ephem.Observer()
@@ -179,7 +179,8 @@ def main():
     image.MakeJPEG(CropFrameJPEG, rotate=True, markPointing=True, binning=1)
     image.CleanUp()             ## Cleanup (delete) temporary files.
     image.CalculateProcessTime()## Calculate how long it took to process this image
-    image.AddWebLogEntry(htmlImageList) ## Add line for this image to HTML table
+    fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "ZeroPoint", "nStars", "ProcessTime"]
+    image.AddWebLogEntry(htmlImageList, fields=fields) ## Add line for this image to HTML table
     image.AddSummaryEntry(summaryFile)  ## Add line for this image to text table
     
 
