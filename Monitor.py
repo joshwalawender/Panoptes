@@ -86,7 +86,7 @@ def main(argv=None):
                             MIoutput = subprocess.check_output(ProcessCall, stderr=subprocess.STDOUT, timeout=150)
                             print("Call to MeasureImage.py Succeeded")
                         except:
-                            print("Call to MeasureImage.py Failed")
+                            print "Call to MeasureImage.py Failed: {0} {1} {2}".format(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
         PreviousFiles = Files
         PreviousFilesTime = now
         time.sleep(5)
