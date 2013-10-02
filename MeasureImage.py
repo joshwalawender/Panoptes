@@ -152,9 +152,11 @@ def main():
     IQMonLogFileName = os.path.join(config.pathLog, DataNightString+"_"+tel.name+"_IQMonLog.txt")
     htmlImageList = os.path.join(config.pathLog, DataNightString+"_"+tel.name+".html")
     summaryFile = os.path.join(config.pathLog, DataNightString+"_"+tel.name+"_Summary.txt")
-    FullFrameJPEG = image.rawFileBasename+"_full.jpg"
-    CropFrameJPEG = image.rawFileBasename+"_crop.jpg"
-    BackgroundJPEG = image.rawFileBasename+"_bkgnd.jpg"
+    FullFrameJPEG = os.path.join(DataNightString, image.rawFileBasename+"_full.jpg")
+    CropFrameJPEG = os.path.join(DataNightString, image.rawFileBasename+"_crop.jpg")
+    BackgroundJPEG = os.path.join(DataNightString, image.rawFileBasename+"_bkgnd.jpg")
+    if not os.path.exists(os.path.join(config.pathPlots, DataNightString)):
+        os.mkdir(os.path.join(config.pathPlots, DataNightString))
     if args.clobber:
         if os.path.exists(IQMonLogFileName): os.remove(IQMonLogFileName)
         if os.path.exists(htmlImageList): os.remove(htmlImageList)
@@ -179,7 +181,7 @@ def main():
     image.MakeJPEG(CropFrameJPEG, rotate=True, markPointing=True, binning=1)
     image.CleanUp()             ## Cleanup (delete) temporary files.
     image.CalculateProcessTime()## Calculate how long it took to process this image
-    fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "ZeroPoint", "nStars", "ProcessTime"]
+    fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "nStars", "ProcessTime"]
     image.AddWebLogEntry(htmlImageList, fields=fields) ## Add line for this image to HTML table
     image.AddSummaryEntry(summaryFile)  ## Add line for this image to text table
     

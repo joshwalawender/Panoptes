@@ -83,10 +83,10 @@ def main(argv=None):
                         ProcessCall = [PythonString, MeasureImageString, os.path.join(DataPath, File)]
                         print("  %s Calling MeasureImage.py with %s" % (TimeString, ProcessCall[2:]))
                         try:
-                            MIoutput = subprocess.check_output(ProcessCall, stderr=subprocess.STDOUT, timeout=150)
+                            MIoutput = subprocess.check_output(ProcessCall, stderr=subprocess.STDOUT)
                             print("Call to MeasureImage.py Succeeded")
                         except:
-                            print "Call to MeasureImage.py Failed: {0} {1} {2}".format(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+                            print("Call to MeasureImage.py Failed: {0} {1} {2}".format(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2]))
         PreviousFiles = Files
         PreviousFilesTime = now
         time.sleep(5)
