@@ -66,7 +66,8 @@ def main(argv=None):
     ##-------------------------------------------------------------------------
     ## Set data path
     ##-------------------------------------------------------------------------
-    DataPath = os.path.join("/skycamdata", DateString, "CR2")
+    PathForDate = os.path.join("/skycamdata", DateString)
+    DataPath = os.path.join(PathForDate, "CR2")
 
 
     ##-------------------------------------------------------------------------
@@ -84,6 +85,7 @@ def main(argv=None):
     ##-------------------------------------------------------------------------
     ## Look for Pre-existing Files
     ##-------------------------------------------------------------------------
+    if not os.path.exists(PathForDate): os.mkdir(PathForDate)
     if not os.path.exists(DataPath): os.mkdir(DataPath)
     PreviousFiles = os.listdir(DataPath)
     PreviousFilesTime = time.gmtime()
