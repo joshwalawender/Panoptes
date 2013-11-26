@@ -23,6 +23,24 @@ The help message goes here.
 '''
 
 
+def GetImtype(imageFile):
+    RawFile = os.path.abspath(imageFile)
+    RawFileDirectory, RawFilename = os.path.split(RawFile)
+    RawBasename, RawExt = os.path.splitext(RawFilename)
+    DataNightDirectory, DataNightString = os.path.split(os.path.split(RawFileDirectory)[0])
+    infoFile = os.path.join(DataNightDirectory, DataNightString, "CR2info", RawBasename+'.info')
+    infoFO = open(infoFile, 'r')
+    info = infoFO.read()
+    lines = info.split("\n")
+    infoFO.close()
+    imtype = None
+    for line in lines:
+        IsMatch = re.match("IMTYPE:\s+(\w+)", line)
+        if IsMatch:
+            imtype = IsMatch.group(1)
+    return imtype
+
+
 def main(argv=None):  
     ##-------------------------------------------------------------------------
     ## Parse Command Line Arguments
@@ -41,11 +59,6 @@ def main(argv=None):
     
     
     ##-------------------------------------------------------------------------
-    ## Establish IQMon Configuration
-    ##-------------------------------------------------------------------------
-    config = IQMon.Config()
-
-    ##-------------------------------------------------------------------------
     ## Set date to tonight if not specified
     ##-------------------------------------------------------------------------
     now = time.gmtime()
@@ -63,7 +76,7 @@ def main(argv=None):
         ##
         ## Loop Through All Images in Images Directory
         ##
-        Files = os.listdir(ImagesDirectory)
+        Files = sorted(os.listdir(ImagesDirectory))
         print "Found %d files in images directory" % len(Files)
         if len(Files) >= 1:
             ## Parse filename for date and time
@@ -73,7 +86,9 @@ def main(argv=None):
                 IsMatch = MatchFilename.match(File)
                 if IsMatch:
                     filenumber = IsMatch.group(1)
-                    Properties.append([filenumber, File])
+                    imtype = GetImtype(os.path.join(ImagesDirectory, File))
+                    if imtype and imtype == "OBJECT":
+                        Properties.append([filenumber, File])
 
             SortedImageFiles   = numpy.array([row[1] for row in sorted(Properties)])
         
