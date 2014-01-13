@@ -137,6 +137,7 @@ def main():
     tel.SExtractorPhotAperture = 6.0*u.pix
     tel.SExtractorSeeing = tel.pixelScale*u.pix
     tel.SExtractorSaturation = 30000.*u.adu  ## Need to determine correct gain
+    tel.pointingMarkerSize = 10*u.arcmin
     ## Define Site (ephem site object)
     tel.site = ephem.Observer()
     tel.CheckUnits()
@@ -191,15 +192,14 @@ def main():
         print(os.path.join(config.pathPlots, FullFrameJPEG))
         os.symlink(skycamJPEGfile, os.path.join(config.pathPlots, FullFrameJPEG))
 
-    image.GetHeader()           ## Extract values from header
-    image.Crop()                ## Crop Image
-    image.GetHeader()           ## Extract values from header
     image.SolveAstrometry()     ## Solve Astrometry
     image.GetHeader()           ## Extract values from header
     image.DeterminePointingError()            ## Calculate Pointing Error
+    image.Crop()                ## Crop Image
+    image.GetHeader()           ## Extract values from header
     image.RunSExtractor()       ## Run SExtractor
     image.DetermineFWHM()       ## Determine FWHM from SExtractor results
-    image.MakeJPEG(CropFrameJPEG, rotate=True, markPointing=True, binning=1)
+    image.MakeJPEG(CropFrameJPEG, markStars=False, rotate=True, markPointing=True, binning=1)
     image.CleanUp()             ## Cleanup (delete) temporary files.
     image.CalculateProcessTime()## Calculate how long it took to process this image
     fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "nStars", "ProcessTime"]

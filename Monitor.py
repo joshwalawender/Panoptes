@@ -42,8 +42,11 @@ def GetImtype(imageFile):
             IsMatch = re.match("IMTYPE:\s+(\w+)", line)
             if IsMatch:
                 imtype = IsMatch.group(1)
+        if not imtype:
+            print("Could not read image type from info file: {}".format(infoFile))
         return imtype
     else:
+        print("Could not find image info file: {}".format(infoFile))
         return None
 
 
@@ -119,6 +122,14 @@ def main(argv=None):
                     if re.match("IMG0_\d{4}\.CR2", File):
                         print("New image File Found:  %s" % File)
                         imtype = GetImtype(os.path.join(DataPath, File))
+                        if not imtype:
+                            print("Waiting for info file to be written.")
+                            time.sleep(1)  ## Wait for info file to be written
+                            imtype = GetImtype(os.path.join(DataPath, File))
+                        if not imtype:
+                            print("Waiting for info file to be written.")
+                            time.sleep(10)  ## Wait for info file to be written
+                            imtype = GetImtype(os.path.join(DataPath, File))
                         if imtype and imtype == "OBJECT":
                             ProcessCall = [PythonString, MeasureImageString, os.path.join(DataPath, File)]
                             print("  %s Calling MeasureImage.py with %s" % (TimeString, ProcessCall[2:]))
