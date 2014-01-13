@@ -41,7 +41,7 @@ def ReadSkycamInfo(RawFile, FitsFile):
         infoFO = open(InfoFile, 'r')
         infolines = infoFO.read().split("\n")
     except:
-        print("Trouble reading Info File")
+        raise
 
     hdulist = fits.open(FitsFile, mode='update', ignore_missing_end=True)
     for line in infolines:
@@ -124,11 +124,11 @@ def main():
     tel.name = "Panoptes"
     tel.longName = "Panoptes"
     tel.focalLength = 85.*u.mm
-    tel.pixelSize = 2*4.6*u.micron     ## Need to determine correct pixel size
+    tel.pixelSize = 4.6*u.micron     ## Need to determine correct pixel size
     tel.aperture = 60.7*u.mm
     tel.gain = 1.6 / u.adu           ## Need to determine correct gain
     tel.unitsForFWHM = 1.*u.pix
-    tel.ROI = "[680:1704,282:1306]"  #"[1361:3409,565:2613]"
+    tel.ROI = "[1361:3409,565:2613]"  # Raw Image Size is 4770,3178
     tel.thresholdFWHM = 2.0*u.pix
     tel.thresholdPointingErr = 60.0*u.arcmin
     tel.thresholdEllipticity = 0.30*u.dimensionless_unscaled
@@ -171,7 +171,6 @@ def main():
     image.MakeLogger(IQMonLogFileName, args.verbose)
     image.logger.info("###### Processing Image:  %s ######", RawFilename)
 
-#     image.ReadImage()           ## Create working copy of image (don't edit raw file!)
     image.logger.info("Converting from CR2 to FITS (green channel only).")
     image.workingFile = os.path.join(config.pathTemp, image.rawFileBasename+'.fits')
     if os.path.exists(image.workingFile): os.remove(image.workingFile)
@@ -179,11 +178,11 @@ def main():
     result = subprocess.check_call(convertCommand, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     image.tempFiles.append(image.workingFile)
     image.fileExt = os.path.splitext(image.workingFile)[1]
-
+    
     image.logger.info("Reading info file created by skycam.c")
     ReadSkycamInfo(RawFile, image.workingFile)
+    image.GetHeader()           ## Extract values from header
 
-#     image.MakeJPEG(FullFrameJPEG, rotate=True, markPointing=True, binning=2)
     image.logger.info("Creating full frame jpeg symlink to {}".format(skycamJPEGfile))
     image.jpegFileNames = [FullFrameJPEG]
     if not os.path.exists(os.path.join(config.pathPlots, FullFrameJPEG)):
@@ -192,16 +191,16 @@ def main():
         print(os.path.join(config.pathPlots, FullFrameJPEG))
         os.symlink(skycamJPEGfile, os.path.join(config.pathPlots, FullFrameJPEG))
 
-    image.SolveAstrometry()     ## Solve Astrometry
-    image.GetHeader()           ## Extract values from header
-    image.DeterminePointingError()            ## Calculate Pointing Error
-    image.Crop()                ## Crop Image
-    image.GetHeader()           ## Extract values from header
-    image.RunSExtractor()       ## Run SExtractor
-    image.DetermineFWHM()       ## Determine FWHM from SExtractor results
+    image.SolveAstrometry()         ## Solve Astrometry
+    image.GetHeader()               ## Extract values from header
+    image.DeterminePointingError()  ## Calculate Pointing Error
+    image.Crop()                    ## Crop Image
+    image.GetHeader()               ## Extract values from header
+    image.RunSExtractor()           ## Run SExtractor
+    image.DetermineFWHM()           ## Determine FWHM from SExtractor results
     image.MakeJPEG(CropFrameJPEG, markStars=False, rotate=True, markPointing=True, binning=1)
-    image.CleanUp()             ## Cleanup (delete) temporary files.
-    image.CalculateProcessTime()## Calculate how long it took to process this image
+    image.CleanUp()                 ## Cleanup (delete) temporary files.
+    image.CalculateProcessTime()    ## Calculate how long it took to process this image
     fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "nStars", "ProcessTime"]
     image.AddWebLogEntry(htmlImageList, fields=fields) ## Add line for this image to HTML table
     image.AddSummaryEntry(summaryFile)  ## Add line for this image to text table
