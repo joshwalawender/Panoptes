@@ -129,7 +129,7 @@ def main():
     tel.gain = 1.6 / u.adu           ## Need to determine correct gain
     tel.unitsForFWHM = 1.*u.pix
     tel.ROI = "[1361:3409,565:2613]"  # Raw Image Size is 4770,3178
-    tel.thresholdFWHM = 2.0*u.pix
+    tel.thresholdFWHM = 2.5*u.pix
     tel.thresholdPointingErr = 60.0*u.arcmin
     tel.thresholdEllipticity = 0.30*u.dimensionless_unscaled
     tel.pixelScale = tel.pixelSize.to(u.mm)/tel.focalLength.to(u.mm)*u.radian.to(u.arcsec)*u.arcsec/u.pix

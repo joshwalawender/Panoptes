@@ -78,11 +78,24 @@ def main(argv=None):
     ##-------------------------------------------------------------------------
     linkTarget = os.path.join("/home" , "panoptesmlo", "IQMon", "Logs", DateString+"_Panoptes.html")
     linkFile = os.path.join("/home" , "panoptesmlo", "IQMon", "Logs", "tonight.html")
-    if os.path.exists(linkFile): os.remove(linkFile)
+    ## If the tonight.html file already exists, remove it.
+    if os.path.exists(linkFile):
+        print('Removing old tonight.html file')
+        os.remove(linkFile)
+    ## If the link target does not exist, create a dummy file with no content, so os.symlink works.
+    if not os.path.exists(linkTarget):
+        print('Making empty file: {}'.format(linkTarget))
+        LTFO = open(linkTarget, 'w')
+        LTFO.write('\n')
+        LTFO.close()
+    ## Use os.symlink to link tonight.html to the correct file
     try:
+        print('Making tonight.html symlink')
         os.symlink(linkTarget, linkFile)
     except:
         print("Could not create link to tonight's data.")
+        for element in sys.exc_info():
+            print(element)
 
 
     ##-------------------------------------------------------------------------
@@ -96,7 +109,7 @@ def main(argv=None):
     ##-------------------------------------------------------------------------
     ## Operation Loop
     ##-------------------------------------------------------------------------
-    PythonString = os.path.join("/usr/", "bin", "python")
+    PythonString = os.path.join("/usr", "bin", "python")
     homePath = os.path.expandvars("$HOME")
     MeasureImageString = os.path.join(homePath, "bin", "Panoptes", "MeasureImage.py")
     Operate = True
