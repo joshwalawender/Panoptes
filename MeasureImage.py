@@ -56,7 +56,7 @@ def ReadSkycamInfo(RawFile, FitsFile):
             RAm = int(math.floor((RAdecimalhours - RAh)*60.))
             RAs = ((RAdecimalhours - RAh)*60. - RAm)*60.
             hdulist[0].header['RA'] = "{:02d}:{:02d}:{:04.1f}".format(RAh, RAm, RAs)
-        IsDEC = re.match("DEC:\s*(\d+\.?\d*)\sdeg", line)
+        IsDEC = re.match("DEC:\s*(\-?\d+\.?\d*)\sdeg", line)
         if IsDEC:
             DECdecimal = float(IsDEC.group(1))
             DECd = int(math.floor(DECdecimal))
@@ -129,7 +129,7 @@ def main():
     tel.gain = 1.6 / u.adu           ## Need to determine correct gain
     tel.unitsForFWHM = 1.*u.pix
     tel.ROI = "[1361:3409,565:2613]"  # Raw Image Size is 4770,3178
-    tel.thresholdFWHM = 2.5*u.pix
+    tel.thresholdFWHM = 3.0*u.pix
     tel.thresholdPointingErr = 60.0*u.arcmin
     tel.thresholdEllipticity = 0.30*u.dimensionless_unscaled
     tel.pixelScale = tel.pixelSize.to(u.mm)/tel.focalLength.to(u.mm)*u.radian.to(u.arcsec)*u.arcsec/u.pix
@@ -187,8 +187,6 @@ def main():
     image.jpegFileNames = [FullFrameJPEG]
     if not os.path.exists(os.path.join(config.pathPlots, FullFrameJPEG)):
         image.logger.info("Creating symlink to skycam.c jpeg.")
-        print(skycamJPEGfile)
-        print(os.path.join(config.pathPlots, FullFrameJPEG))
         os.symlink(skycamJPEGfile, os.path.join(config.pathPlots, FullFrameJPEG))
 
     image.SolveAstrometry()         ## Solve Astrometry

@@ -43,10 +43,10 @@ def GetImtype(imageFile):
             if IsMatch:
                 imtype = IsMatch.group(1)
         if not imtype:
-            print("Could not read image type from info file: {}".format(infoFile))
+            print("  Could not read image type from info file: {}".format(infoFile))
         return imtype
     else:
-        print("Could not find image info file: {}".format(infoFile))
+        print("  Could not find image info file: {}".format(infoFile))
         return None
 
 
@@ -71,31 +71,6 @@ def main(argv=None):
     ##-------------------------------------------------------------------------
     PathForDate = os.path.join("/skycamdata", DateString)
     DataPath = os.path.join(PathForDate, "CR2")
-
-
-    ##-------------------------------------------------------------------------
-    ## Create Link to Tonight HTML File
-    ##-------------------------------------------------------------------------
-    linkTarget = os.path.join("/home" , "panoptesmlo", "IQMon", "Logs", DateString+"_Panoptes.html")
-    linkFile = os.path.join("/home" , "panoptesmlo", "IQMon", "Logs", "tonight.html")
-    ## If the tonight.html file already exists, remove it.
-    if os.path.exists(linkFile):
-        print('Removing old tonight.html file')
-        os.remove(linkFile)
-    ## If the link target does not exist, create a dummy file with no content, so os.symlink works.
-    if not os.path.exists(linkTarget):
-        print('Making empty file: {}'.format(linkTarget))
-        LTFO = open(linkTarget, 'w')
-        LTFO.write('\n')
-        LTFO.close()
-    ## Use os.symlink to link tonight.html to the correct file
-    try:
-        print('Making tonight.html symlink')
-        os.symlink(linkTarget, linkFile)
-    except:
-        print("Could not create link to tonight's data.")
-        for element in sys.exc_info():
-            print(element)
 
 
     ##-------------------------------------------------------------------------
@@ -136,25 +111,51 @@ def main(argv=None):
                         print("New image File Found:  %s" % File)
                         imtype = GetImtype(os.path.join(DataPath, File))
                         if not imtype:
-                            print("Waiting for info file to be written.")
-                            time.sleep(1)  ## Wait for info file to be written
+                            print("  Waiting 10 seconds for info file to be written.")
+                            time.sleep(10)  ## Wait for info file to be written
                             imtype = GetImtype(os.path.join(DataPath, File))
                         if not imtype:
-                            print("Waiting for info file to be written.")
-                            time.sleep(10)  ## Wait for info file to be written
+                            print("  Waiting 20 seconds for info file to be written.")
+                            time.sleep(20)  ## Wait for info file to be written
                             imtype = GetImtype(os.path.join(DataPath, File))
                         if imtype and imtype == "OBJECT":
                             ProcessCall = [PythonString, MeasureImageString, os.path.join(DataPath, File)]
                             print("  %s Calling MeasureImage.py with %s" % (TimeString, ProcessCall[2:]))
                             try:
-                                MIoutput = subprocess.check_output(ProcessCall, stderr=subprocess.STDOUT)
-                                print("Call to MeasureImage.py Succeeded")
+                                MIoutput = subprocess.check_output(ProcessCall, stderr=subprocess.STDOUT, universal_newlines=True)
+                                print("  Call to MeasureImage.py Succeeded")
+                            except subprocess.CalledProcessError as e:
+                                print("  Call to MeasureImage.py Failed")
+                                print("  Command: {}".format(e.command))
+                                print("  Returncode: {}".format(e.returncode))
+                                print("  Output: {}".format(e.output))
                             except:
-                                print("Call to MeasureImage.py Failed: {0} {1} {2}".format(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2]))
+                                print("  Call to MeasureImage.py Failed: {0} {1} {2}".format(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2]))
                         else:
-                            print("File ImType is {}.  MeasureImage not called.".format(imtype))
+                            print("  File ImType is {}.  MeasureImage not called.".format(imtype))
         PreviousFiles = Files
         PreviousFilesTime = now
+        
+        ##-------------------------------------------------------------------------
+        ## Create Link to Tonight HTML File
+        ##-------------------------------------------------------------------------
+        linkTarget = os.path.join("/home" , "panoptesmlo", "IQMon", "Logs", DateString+"_Panoptes.html")
+        linkFile = os.path.join("/home" , "panoptesmlo", "IQMon", "Logs", "tonight.html")
+        ## If the tonight.html file already exists, remove it.
+        if os.path.exists(linkFile):
+            if (os.readlink(linkFile) != linkTarget) and (os.path.exists(linkTarget)):
+                print('Removing old tonight.html file')
+                os.remove(linkFile)
+        ## Use os.symlink to link tonight.html to the correct file
+        if not os.path.exists(linkFile):
+            try:
+                print('Making tonight.html symlink')
+                os.symlink(linkTarget, linkFile)
+            except:
+                print("Could not create link to tonight's data.")
+                for element in sys.exc_info():
+                    print(element)
+
         time.sleep(5)
         if nowDecimalHours > 17.0:
             Operate = False
