@@ -175,7 +175,11 @@ def main():
     image.workingFile = os.path.join(config.pathTemp, image.rawFileBasename+'.fits')
     if os.path.exists(image.workingFile): os.remove(image.workingFile)
     convertCommand = '/skycam/soft/CR2toFITSg '+image.rawFile+' '+image.workingFile
-    result = subprocess.check_call(convertCommand, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    image.logger.debug('  Running: {}'.format(convertCommand))
+    try:
+        result = subprocess.check_call(convertCommand, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except:
+        image.logger.warning('  CR2toFITSg failed!')
     image.tempFiles.append(image.workingFile)
     image.fileExt = os.path.splitext(image.workingFile)[1]
     
