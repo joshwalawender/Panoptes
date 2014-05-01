@@ -134,9 +134,11 @@ def main():
     tel.thresholdEllipticity = 0.30*u.dimensionless_unscaled
     tel.pixelScale = tel.pixelSize.to(u.mm)/tel.focalLength.to(u.mm)*u.radian.to(u.arcsec)*u.arcsec/u.pix
     tel.fRatio = tel.focalLength.to(u.mm)/tel.aperture.to(u.mm)
-    tel.SExtractorPhotAperture = 6.0*u.pix
-    tel.SExtractorSeeing = tel.pixelScale*u.pix
-    tel.SExtractorSaturation = 30000.*u.adu  ## Need to determine correct gain
+    tel.SExtractorParams = {'PHOT_APERTURES': 6.0,
+                            'SEEING': 3.5,
+                            'SATUR_LEVEL': 30000.,
+                            'FILTER': 'N',
+                            }
     tel.pointingMarkerSize = 10*u.arcmin
     ## Define Site (ephem site object)
     tel.site = ephem.Observer()
@@ -180,6 +182,7 @@ def main():
         result = subprocess.check_call(convertCommand, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except:
         image.logger.warning('  CR2toFITSg failed!')
+        sys.exit(1)
     image.tempFiles.append(image.workingFile)
     image.fileExt = os.path.splitext(image.workingFile)[1]
     
@@ -200,7 +203,7 @@ def main():
     image.GetHeader()               ## Extract values from header
     image.RunSExtractor()           ## Run SExtractor
     image.DetermineFWHM()           ## Determine FWHM from SExtractor results
-    image.MakeJPEG(CropFrameJPEG, markStars=False, rotate=True, markPointing=True, binning=1)
+    image.MakeJPEG(CropFrameJPEG, markDetectedStars=False, markPointing=True, binning=1)
     image.CleanUp()                 ## Cleanup (delete) temporary files.
     image.CalculateProcessTime()    ## Calculate how long it took to process this image
     fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "nStars", "ProcessTime"]
