@@ -134,12 +134,16 @@ def main():
     tel.thresholdEllipticity = 0.30*u.dimensionless_unscaled
     tel.pixelScale = tel.pixelSize.to(u.mm)/tel.focalLength.to(u.mm)*u.radian.to(u.arcsec)*u.arcsec/u.pix
     tel.fRatio = tel.focalLength.to(u.mm)/tel.aperture.to(u.mm)
-    tel.SExtractorParams = {'PHOT_APERTURES': 6.0,
+    tel.SExtractorParams = {
+                            'DETECT_THRESH': 6.0,
+                            'ANALYSIS_THRESH': 6.0,
+                            'PHOT_APERTURES': 6.0,
                             'SEEING': 3.5,
                             'SATUR_LEVEL': 30000.,
                             'FILTER': 'N',
                             }
     tel.pointingMarkerSize = 10*u.arcmin
+    tel.measurement_radius = 1000
     ## Define Site (ephem site object)
     tel.site = ephem.Observer()
     tel.CheckUnits()
@@ -159,6 +163,7 @@ def main():
     FullFrameJPEG = os.path.join(DataNightString, image.rawFileBasename+"_full.jpg")
     CropFrameJPEG = os.path.join(DataNightString, image.rawFileBasename+"_crop.jpg")
     BackgroundJPEG = os.path.join(DataNightString, image.rawFileBasename+"_bkgnd.jpg")
+    PSFplotfile = os.path.join(DataNightString, image.rawFileBasename+"_PSF.png")
     if not os.path.exists(os.path.join(config.pathPlots, DataNightString)):
         os.mkdir(os.path.join(config.pathPlots, DataNightString))
     if args.clobber:
@@ -192,18 +197,19 @@ def main():
 
     image.logger.info("Creating full frame jpeg symlink to {}".format(skycamJPEGfile))
     image.jpegFileNames = [FullFrameJPEG]
-    if not os.path.exists(os.path.join(config.pathPlots, FullFrameJPEG)):
+    if os.path.exists(skycamJPEGfile) and not os.path.exists(os.path.join(config.pathPlots, FullFrameJPEG)):
         image.logger.info("Creating symlink to skycam.c jpeg.")
         os.symlink(skycamJPEGfile, os.path.join(config.pathPlots, FullFrameJPEG))
 
     image.SolveAstrometry()         ## Solve Astrometry
     image.GetHeader()               ## Extract values from header
     image.DeterminePointingError()  ## Calculate Pointing Error
-    image.Crop()                    ## Crop Image
-    image.GetHeader()               ## Extract values from header
+#     image.Crop()                    ## Crop Image
+#     image.GetHeader()               ## Extract values from header
     image.RunSExtractor()           ## Run SExtractor
     image.DetermineFWHM()           ## Determine FWHM from SExtractor results
-    image.MakeJPEG(CropFrameJPEG, markDetectedStars=False, markPointing=True, binning=1)
+    image.MakePSFplot(plotFileName=PSFplotfile)
+    image.MakeJPEG(CropFrameJPEG, markDetectedStars=True, markPointing=True, binning=1)
     image.CleanUp()                 ## Cleanup (delete) temporary files.
     image.CalculateProcessTime()    ## Calculate how long it took to process this image
     fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "nStars", "ProcessTime"]
