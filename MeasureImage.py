@@ -129,8 +129,8 @@ def main():
     tel.threshold_FWHM = 3.0*u.pix
     tel.threshold_pointing_err = 60.0*u.arcmin
     tel.threshold_ellipticity = 0.30*u.dimensionless_unscaled
-    tel.pixel_scale = tel.pixelSize.to(u.mm)/tel.focalLength.to(u.mm)*u.radian.to(u.arcsec)*u.arcsec/u.pix
-    tel.fRatio = tel.focalLength.to(u.mm)/tel.aperture.to(u.mm)
+    tel.pixel_scale = tel.pixel_size.to(u.mm)/tel.focal_length.to(u.mm)*u.radian.to(u.arcsec)*u.arcsec/u.pix
+    tel.fRatio = tel.focal_length.to(u.mm)/tel.aperture.to(u.mm)
     tel.SExtractor_params = {
                             'DETECT_THRESH': 6.0,
                             'ANALYSIS_THRESH': 6.0,
@@ -155,12 +155,13 @@ def main():
     ## Create Filenames
     ##-------------------------------------------------------------------------
     path_log = os.path.join(os.path.expanduser('~'), 'IQMon', 'Logs')
+    path_plots = os.path.join(os.path.expanduser('~'), 'IQMon', 'Plots')
     IQMonLogFileName = os.path.join(path_log, DataNightString+"_"+tel.name+"_IQMonLog.txt")
     htmlImageList = os.path.join(path_log, DataNightString+"_"+tel.name+".html")
     summaryFile = os.path.join(path_log, DataNightString+"_"+tel.name+"_Summary.txt")
 
-    if not os.path.exists(os.path.join(config.pathPlots, DataNightString)):
-        os.mkdir(os.path.join(config.pathPlots, DataNightString))
+    if not os.path.exists(os.path.join(path_plots, DataNightString)):
+        os.mkdir(os.path.join(path_plots, DataNightString))
     if args.clobber:
         if os.path.exists(IQMonLogFileName): os.remove(IQMonLogFileName)
         if os.path.exists(htmlImageList): os.remove(htmlImageList)
@@ -173,16 +174,15 @@ def main():
     image.make_logger(IQMonLogFileName, args.verbose)
     image.logger.info("###### Processing Image:  %s ######", args.filename)
     image.read_image()
-    image.read_header()
-    image.logger.info("Reading info file created by skycam.c")
-    ReadSkycamInfo(RawFile, image.workingFile)
-    image.read_header()
-
-    image.logger.info("Creating full frame jpeg symlink to {}".format(skycamJPEGfile))
-    image.jpegFileNames = [FullFrameJPEG]
-    if os.path.exists(skycamJPEGfile) and not os.path.exists(os.path.join(config.pathPlots, FullFrameJPEG)):
-        image.logger.info("Creating symlink to skycam.c jpeg.")
-        os.symlink(skycamJPEGfile, os.path.join(config.pathPlots, FullFrameJPEG))
+#     image.logger.info("Reading info file created by skycam.c")
+#     ReadSkycamInfo(args.filename, image.working_file)
+#     image.read_header()
+# 
+#     image.logger.info("Creating full frame jpeg symlink to {}".format(skycamJPEGfile))
+#     image.jpegFileNames = [FullFrameJPEG]
+#     if os.path.exists(skycamJPEGfile) and not os.path.exists(os.path.join(config.pathPlots, FullFrameJPEG)):
+#         image.logger.info("Creating symlink to skycam.c jpeg.")
+#         os.symlink(skycamJPEGfile, os.path.join(config.pathPlots, FullFrameJPEG))
 
     if not image.image_WCS:      ## If no WCS found in header ...
         image.solve_astrometry() ## Solve Astrometry
