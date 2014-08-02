@@ -201,7 +201,8 @@ def main():
 
     image.clean_up()                 ## Cleanup (delete) temporary files.
     image.calculate_process_time()    ## Calculate how long it took to process this image
-    fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "nStars", "ProcessTime"]
+#     fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "nStars", "ProcessTime"]
+    fields=["Filename", "FWHM", "ellipticity", "Background", "nStars"]
     image.add_web_log_entry(htmlImageList, fields=fields) ## Add line for this image to HTML table
     image.add_summary_entry(summaryFile)  ## Add line for this image to text table
     
