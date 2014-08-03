@@ -41,7 +41,7 @@ def GetImtype(imageFile):
     return imtype
 
 
-def main(argv=None):  
+def main():
     ##-------------------------------------------------------------------------
     ## Parse Command Line Arguments
     ##-------------------------------------------------------------------------
@@ -70,17 +70,17 @@ def main(argv=None):
     DataPath = os.path.join("/skycamdata")
     ImagesDirectory = os.path.join(DataPath, args.date, "CR2")
     
-    print "Analyzing data for night of "+args.date
+    print("Analyzing data for night of {}".format(args.date))
     if os.path.exists(ImagesDirectory):
-        print "  Found "+ImagesDirectory
+        print("  Found {}".format(ImagesDirectory))
         ##
         ## Loop Through All Images in Images Directory
         ##
         Files = sorted(os.listdir(ImagesDirectory))
-        print "Found %d files in images directory" % len(Files)
+        print("Found {} files in images directory".format(len(Files)))
         if len(Files) >= 1:
             ## Parse filename for date and time
-            MatchFilename = re.compile("IMG0_(\d{4})\.CR2")
+            MatchFilename = re.compile("IMG\d_(\d{4})\.CR2")
             Properties = []
             for File in Files:
                 IsMatch = MatchFilename.match(File)
@@ -92,7 +92,7 @@ def main(argv=None):
 
             SortedImageFiles   = numpy.array([row[1] for row in sorted(Properties)])
         
-            print "%d out of %d files meet selection criteria." % (len(SortedImageFiles), len(Files))
+            print("{} out of {} files meet selection criteria.".format(len(SortedImageFiles), len(Files)))
             for Image in SortedImageFiles:
                 if fnmatch.fnmatch(Image, "*.CR2"):
                     now = time.gmtime()
@@ -100,21 +100,21 @@ def main(argv=None):
                     DateString = time.strftime("%Y%m%dUT", now)
 
                     
-                    ProcessCall = [os.path.join(os.path.expanduser('~'), 'git', 'Panoptes', 'MeasureImage.py')]
+                    ProcessCall = ['python3', os.path.join(os.path.expanduser('~'), 'git', 'Panoptes', 'MeasureImage.py')]
                     if args.clobber and Image == SortedImageFiles[0]:
                         ProcessCall.append("--clobber")
                     ProcessCall.append(os.path.join(ImagesDirectory, Image))
-                    print "%s Calling MeasureImage.py with %s" % (TimeString, ProcessCall)
+                    print("{} Calling MeasureImage.py with {}".format(TimeString, ProcessCall))
                     try:
                         MIoutput = subprocess.check_output(ProcessCall, stderr=subprocess.STDOUT)
                         for line in MIoutput.split("\n"):
-                            print line
+                            print(line)
                     except:
-                        print "Call to MeasureImage.py Failed: {0} {1} {2}".format(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2])
+                        print("Call to MeasureImage.py Failed: {0} {1} {2}".format(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2]))
         else:
-            print "No image files found in directory: "+ImagesDirectory
+            print("No image files found in directory: {}".format(ImagesDirectory))
     else:
-        print "No Images or Logs directory for this night"
+        print("No Images or Logs directory for this night")
 
 if __name__ == "__main__":
     sys.exit(main())

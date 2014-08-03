@@ -115,8 +115,8 @@ def main():
     ##-------------------------------------------------------------------------
     ## Create Telescope Object
     ##-------------------------------------------------------------------------
-    path_temp = '/Users/joshw/IQMon/tmp'
-    path_plots = '/Users/joshw/IQMon/Plots'
+    path_temp = '/home/joshw/IQMon/tmp'
+    path_plots = '/home/joshw/IQMon/Plots'
     tel = IQMon.Telescope(path_temp, path_plots)
     tel.name = "Panoptes"
     tel.long_name = "Panoptes"
@@ -174,15 +174,16 @@ def main():
     image.make_logger(IQMonLogFileName, args.verbose)
     image.logger.info("###### Processing Image:  %s ######", args.filename)
     image.read_image()
-#     image.logger.info("Reading info file created by skycam.c")
-#     ReadSkycamInfo(args.filename, image.working_file)
-#     image.read_header()
-# 
-#     image.logger.info("Creating full frame jpeg symlink to {}".format(skycamJPEGfile))
-#     image.jpegFileNames = [FullFrameJPEG]
-#     if os.path.exists(skycamJPEGfile) and not os.path.exists(os.path.join(config.pathPlots, FullFrameJPEG)):
-#         image.logger.info("Creating symlink to skycam.c jpeg.")
-#         os.symlink(skycamJPEGfile, os.path.join(config.pathPlots, FullFrameJPEG))
+    image.logger.info("Reading info file created by skycam.c")
+    ReadSkycamInfo(RawFile, image.working_file)
+    image.read_header()
+
+    FullFrameJPEG = os.path.join(DataNightDirectory, 'JPEG', '{}.jpeg'.format(RawFilename))
+    image.logger.info("Creating full frame jpeg symlink to {}".format(FullFrameJPEG))
+    image.jpeg_file_names = [FullFrameJPEG]
+    if os.path.exists(FullFrameJPEG):
+        image.logger.info("Creating symlink to skycam.c jpeg.")
+        os.symlink(FullFrameJPEG, os.path.join(path_plots, DataNightString, '{}.jpg'.format(RawBasename)))
 
     if not image.image_WCS:      ## If no WCS found in header ...
         image.solve_astrometry() ## Solve Astrometry
@@ -197,12 +198,11 @@ def main():
 #     image.get_local_UCAC4(local_UCAC_command="/Users/joshw/Data/UCAC4/access/u4test", local_UCAC_data="/Users/joshw/Data/UCAC4/u4b")
 #     image.run_SExtractor(assoc=True)
 #     image.determine_FWHM()       ## Determine FWHM from SExtractor results
-#     image.make_PSF_plot()
 
+    image.make_PSF_plot()
     image.clean_up()                 ## Cleanup (delete) temporary files.
     image.calculate_process_time()    ## Calculate how long it took to process this image
-#     fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "nStars", "ProcessTime"]
-    fields=["Filename", "FWHM", "ellipticity", "Background", "nStars"]
+    fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "nStars", "ProcessTime"]
     image.add_web_log_entry(htmlImageList, fields=fields) ## Add line for this image to HTML table
     image.add_summary_entry(summaryFile)  ## Add line for this image to text table
     
