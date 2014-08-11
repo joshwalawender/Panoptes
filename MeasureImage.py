@@ -178,16 +178,23 @@ def main():
     ReadSkycamInfo(RawFile, image.working_file)
     image.read_header()
 
-    FullFrameJPEG = os.path.join(DataNightDirectory, 'JPEG', '{}.jpeg'.format(RawFilename))
+    FullFrameJPEG = os.path.join(DataNightDirectory, DataNightString, 'JPEG', '{}.jpeg'.format(RawFilename))
+    FullFrameSymLink = os.path.join(path_plots, DataNightString, '{}.jpg'.format(RawBasename))
     image.logger.info("Creating full frame jpeg symlink to {}".format(FullFrameJPEG))
-    image.jpeg_file_names = [FullFrameJPEG]
-    if os.path.exists(FullFrameJPEG):
+    if os.path.exists(FullFrameJPEG) and not os.path.exists(FullFrameSymLink):
         image.logger.info("Creating symlink to skycam.c jpeg.")
-        os.symlink(FullFrameJPEG, os.path.join(path_plots, DataNightString, '{}.jpg'.format(RawBasename)))
+        os.symlink(FullFrameJPEG, FullFrameSymLink)
+    image.jpeg_file_names = [os.path.join(DataNightString, '{}.jpg'.format(RawBasename))]
 
     if not image.image_WCS:      ## If no WCS found in header ...
+        print(image.working_file)
         image.solve_astrometry() ## Solve Astrometry
         image.read_header()       ## Refresh Header
+
+    image.new_make_JPEG('test.jpg', binning=2, transform='flip_vertical')
+    sys.exit(0)
+
+
     image.determine_pointing_error()  ## Calculate Pointing Error
     image.run_SExtractor()           ## Run SExtractor
     image.determine_FWHM()           ## Determine FWHM from SExtractor results
@@ -199,7 +206,7 @@ def main():
 #     image.run_SExtractor(assoc=True)
 #     image.determine_FWHM()       ## Determine FWHM from SExtractor results
 
-    image.make_PSF_plot()
+#     image.make_PSF_plot()
     image.clean_up()                 ## Cleanup (delete) temporary files.
     image.calculate_process_time()    ## Calculate how long it took to process this image
     fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "nStars", "ProcessTime"]
