@@ -85,8 +85,7 @@ def main(argv=None):
     ## Operation Loop
     ##-------------------------------------------------------------------------
     PythonString = os.path.join("/usr", "bin", "python")
-    homePath = os.path.expandvars("$HOME")
-    MeasureImageString = os.path.join(homePath, "bin", "Panoptes", "MeasureImage.py")
+    MeasureImageString = os.path.join(os.path.expanduser('~'), "git", "Panoptes", "MeasureImage.py")
     Operate = True
     while Operate:
         ## Set date to tonight
@@ -139,8 +138,8 @@ def main(argv=None):
         ##-------------------------------------------------------------------------
         ## Create Link to Tonight HTML File
         ##-------------------------------------------------------------------------
-        linkTarget = os.path.join("/home" , "panoptesmlo", "IQMon", "Logs", DateString+"_Panoptes.html")
-        linkFile = os.path.join("/home" , "panoptesmlo", "IQMon", "Logs", "tonight.html")
+        linkTarget = os.path.join(os.path.expanduser('~'), "IQMon", "Logs", DateString+"_Panoptes.html")
+        linkFile = os.path.join(os.path.expanduser('~'), "IQMon", "Logs", "tonight.html")
         ## If the tonight.html file already exists, remove it.
         if os.path.exists(linkFile):
             if (os.readlink(linkFile) != linkTarget) and (os.path.exists(linkTarget)):

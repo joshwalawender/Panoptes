@@ -111,30 +111,27 @@ def main():
     DataNightDirectory, DataNightString = os.path.split(os.path.split(RawFileDirectory)[0])
     skycamJPEGfile = os.path.join(DataNightDirectory, DataNightString, "JPEG", RawFilename+'.jpeg')
 
-    ##-------------------------------------------------------------------------
-    ## Establish IQMon Configuration
-    ##-------------------------------------------------------------------------
-    config = IQMon.Config()
-
 
     ##-------------------------------------------------------------------------
     ## Create Telescope Object
     ##-------------------------------------------------------------------------
-    tel = IQMon.Telescope()
+    path_temp = '/home/joshw/IQMon/tmp'
+    path_plots = '/home/joshw/IQMon/Plots'
+    tel = IQMon.Telescope(path_temp, path_plots)
     tel.name = "Panoptes"
-    tel.longName = "Panoptes"
-    tel.focalLength = 85.*u.mm
-    tel.pixelSize = 4.6*u.micron     ## Need to determine correct pixel size
+    tel.long_name = "Panoptes"
+    tel.focal_length = 85.*u.mm
+    tel.pixel_size = 4.6*u.micron     ## Need to determine correct pixel size
     tel.aperture = 60.7*u.mm
     tel.gain = 1.6 / u.adu           ## Need to determine correct gain
-    tel.unitsForFWHM = 1.*u.pix
-    tel.ROI = "[1361:3409,565:2613]"  # Raw Image Size is 4770,3178
-    tel.thresholdFWHM = 3.0*u.pix
-    tel.thresholdPointingErr = 60.0*u.arcmin
-    tel.thresholdEllipticity = 0.30*u.dimensionless_unscaled
-    tel.pixelScale = tel.pixelSize.to(u.mm)/tel.focalLength.to(u.mm)*u.radian.to(u.arcsec)*u.arcsec/u.pix
-    tel.fRatio = tel.focalLength.to(u.mm)/tel.aperture.to(u.mm)
-    tel.SExtractorParams = {
+    tel.units_for_FWHM = 1.*u.pix
+    tel.ROI = None
+    tel.threshold_FWHM = 3.0*u.pix
+    tel.threshold_pointing_err = 60.0*u.arcmin
+    tel.threshold_ellipticity = 0.30*u.dimensionless_unscaled
+    tel.pixel_scale = tel.pixel_size.to(u.mm)/tel.focal_length.to(u.mm)*u.radian.to(u.arcsec)*u.arcsec/u.pix
+    tel.fRatio = tel.focal_length.to(u.mm)/tel.aperture.to(u.mm)
+    tel.SExtractor_params = {
                             'DETECT_THRESH': 6.0,
                             'ANALYSIS_THRESH': 6.0,
                             'PHOT_APERTURES': 6.0,
@@ -142,30 +139,29 @@ def main():
                             'SATUR_LEVEL': 30000.,
                             'FILTER': 'N',
                             }
-    tel.pointingMarkerSize = 10*u.arcmin
-    tel.measurement_radius = 1000
+    tel.distortionOrder = 5
+    tel.pointing_marker_size = 15*u.arcmin
     ## Define Site (ephem site object)
     tel.site = ephem.Observer()
-    tel.CheckUnits()
-    tel.DefinePixelScale()
+    tel.check_units()
+    tel.define_pixel_scale()
 
     ##-------------------------------------------------------------------------
     ## Create IQMon.Image Object
     ##-------------------------------------------------------------------------
-    image = IQMon.Image(RawFile, tel, config)  ## Create image object
+    image = IQMon.Image(args.filename, tel=tel)  ## Create image object
 
     ##-------------------------------------------------------------------------
     ## Create Filenames
     ##-------------------------------------------------------------------------
-    IQMonLogFileName = os.path.join(config.pathLog, DataNightString+"_"+tel.name+"_IQMonLog.txt")
-    htmlImageList = os.path.join(config.pathLog, DataNightString+"_"+tel.name+".html")
-    summaryFile = os.path.join(config.pathLog, DataNightString+"_"+tel.name+"_Summary.txt")
-    FullFrameJPEG = os.path.join(DataNightString, image.rawFileBasename+"_full.jpg")
-    CropFrameJPEG = os.path.join(DataNightString, image.rawFileBasename+"_crop.jpg")
-    BackgroundJPEG = os.path.join(DataNightString, image.rawFileBasename+"_bkgnd.jpg")
-    PSFplotfile = os.path.join(DataNightString, image.rawFileBasename+"_PSF.png")
-    if not os.path.exists(os.path.join(config.pathPlots, DataNightString)):
-        os.mkdir(os.path.join(config.pathPlots, DataNightString))
+    path_log = os.path.join(os.path.expanduser('~'), 'IQMon', 'Logs')
+    path_plots = os.path.join(os.path.expanduser('~'), 'IQMon', 'Plots')
+    IQMonLogFileName = os.path.join(path_log, DataNightString+"_"+tel.name+"_IQMonLog.txt")
+    htmlImageList = os.path.join(path_log, DataNightString+"_"+tel.name+".html")
+    summaryFile = os.path.join(path_log, DataNightString+"_"+tel.name+"_Summary.txt")
+
+    if not os.path.exists(os.path.join(path_plots, DataNightString)):
+        os.mkdir(os.path.join(path_plots, DataNightString))
     if args.clobber:
         if os.path.exists(IQMonLogFileName): os.remove(IQMonLogFileName)
         if os.path.exists(htmlImageList): os.remove(htmlImageList)
@@ -175,46 +171,50 @@ def main():
     ##-------------------------------------------------------------------------
     ## Perform Actual Image Analysis
     ##-------------------------------------------------------------------------
-    image.MakeLogger(IQMonLogFileName, args.verbose)
-    image.logger.info("###### Processing Image:  %s ######", RawFilename)
-
-    image.logger.info("Converting from CR2 to FITS (green channel only).")
-    image.workingFile = os.path.join(config.pathTemp, image.rawFileBasename+'.fits')
-    if os.path.exists(image.workingFile): os.remove(image.workingFile)
-    convertCommand = '/skycam/soft/CR2toFITSg '+image.rawFile+' '+image.workingFile
-    image.logger.debug('  Running: {}'.format(convertCommand))
-    try:
-        result = subprocess.check_call(convertCommand, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except:
-        image.logger.warning('  CR2toFITSg failed!')
-        sys.exit(1)
-    image.tempFiles.append(image.workingFile)
-    image.fileExt = os.path.splitext(image.workingFile)[1]
-    
+    image.make_logger(IQMonLogFileName, args.verbose)
+    image.logger.info("###### Processing Image:  %s ######", args.filename)
+    image.read_image()
     image.logger.info("Reading info file created by skycam.c")
-    ReadSkycamInfo(RawFile, image.workingFile)
-    image.GetHeader()           ## Extract values from header
+    ReadSkycamInfo(RawFile, image.working_file)
+    image.read_header()
 
-    image.logger.info("Creating full frame jpeg symlink to {}".format(skycamJPEGfile))
-    image.jpegFileNames = [FullFrameJPEG]
-    if os.path.exists(skycamJPEGfile) and not os.path.exists(os.path.join(config.pathPlots, FullFrameJPEG)):
+    FullFrameJPEG = os.path.join(DataNightDirectory, DataNightString, 'JPEG', '{}.jpeg'.format(RawFilename))
+    FullFrameSymLink = os.path.join(path_plots, DataNightString, '{}.jpg'.format(RawBasename))
+    image.logger.info("Creating full frame jpeg symlink to {}".format(FullFrameJPEG))
+    if os.path.exists(FullFrameJPEG) and not os.path.exists(FullFrameSymLink):
         image.logger.info("Creating symlink to skycam.c jpeg.")
-        os.symlink(skycamJPEGfile, os.path.join(config.pathPlots, FullFrameJPEG))
+        os.symlink(FullFrameJPEG, FullFrameSymLink)
+    image.jpeg_file_names = [os.path.join(DataNightString, '{}.jpg'.format(RawBasename))]
 
-    image.SolveAstrometry()         ## Solve Astrometry
-    image.GetHeader()               ## Extract values from header
-    image.DeterminePointingError()  ## Calculate Pointing Error
-#     image.Crop()                    ## Crop Image
-#     image.GetHeader()               ## Extract values from header
-    image.RunSExtractor()           ## Run SExtractor
-    image.DetermineFWHM()           ## Determine FWHM from SExtractor results
-    image.MakePSFplot(plotFileName=PSFplotfile)
-    image.MakeJPEG(CropFrameJPEG, markDetectedStars=True, markPointing=True, binning=1)
-    image.CleanUp()                 ## Cleanup (delete) temporary files.
-    image.CalculateProcessTime()    ## Calculate how long it took to process this image
+    if not image.image_WCS:      ## If no WCS found in header ...
+        image.solve_astrometry() ## Solve Astrometry
+        image.read_header()       ## Refresh Header
+
+    image.determine_pointing_error()  ## Calculate Pointing Error
+    image.run_SExtractor()           ## Run SExtractor
+
+#     image.run_SCAMP(catalog='UCAC-3')
+#     image.run_SWarp()
+#     image.read_header()           ## Extract values from header
+#     image.get_local_UCAC4(local_UCAC_command="/Users/joshw/Data/UCAC4/access/u4test", local_UCAC_data="/Users/joshw/Data/UCAC4/u4b")
+#     image.run_SExtractor(assoc=True)
+
+    image.determine_FWHM()       ## Determine FWHM from SExtractor results
+    image.make_PSF_plot()
+
+    cropped_JPEG = image.raw_file_basename+"_crop.jpg"
+    image.new_make_JPEG(cropped_JPEG,\
+                        mark_pointing=True,\
+                        mark_detected_stars=True,\
+                        mark_catalog_stars=False,\
+                        crop=(int(image.nXPix/2)-1024, int(image.nYPix/2)-1024, int(image.nXPix/2)+1024, int(image.nYPix/2)+1024),
+                        transform='flip_vertical')
+
+    image.clean_up()                 ## Cleanup (delete) temporary files.
+    image.calculate_process_time()    ## Calculate how long it took to process this image
     fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "nStars", "ProcessTime"]
-    image.AddWebLogEntry(htmlImageList, fields=fields) ## Add line for this image to HTML table
-    image.AddSummaryEntry(summaryFile)  ## Add line for this image to text table
+    image.add_web_log_entry(htmlImageList, fields=fields) ## Add line for this image to HTML table
+    image.add_summary_entry(summaryFile)  ## Add line for this image to text table
     
 
 if __name__ == '__main__':
