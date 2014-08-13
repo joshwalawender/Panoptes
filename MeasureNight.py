@@ -99,7 +99,6 @@ def main():
                     TimeString = time.strftime("%Y/%m/%d %H:%M:%S UT -", now)
                     DateString = time.strftime("%Y%m%dUT", now)
 
-                    
                     ProcessCall = ['python2.7', os.path.join(os.path.expanduser('~'), 'git', 'Panoptes', 'MeasureImage.py')]
                     if args.clobber and Image == SortedImageFiles[0]:
                         ProcessCall.append("--clobber")

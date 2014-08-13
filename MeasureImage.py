@@ -205,7 +205,7 @@ def main():
     cropped_JPEG = image.raw_file_basename+"_crop.jpg"
     image.new_make_JPEG(cropped_JPEG,\
                         mark_pointing=True,\
-                        mark_detected_stars=False,\
+                        mark_detected_stars=True,\
                         mark_catalog_stars=False,\
                         crop=(int(image.nXPix/2)-1024, int(image.nYPix/2)-1024, int(image.nXPix/2)+1024, int(image.nYPix/2)+1024),
                         transform='flip_vertical')
