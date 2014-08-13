@@ -140,7 +140,7 @@ def main():
                             'FILTER': 'N',
                             }
     tel.distortionOrder = 5
-    tel.pointing_marker_size = 10*u.arcmin
+    tel.pointing_marker_size = 15*u.arcmin
     ## Define Site (ephem site object)
     tel.site = ephem.Observer()
     tel.check_units()
@@ -187,26 +187,29 @@ def main():
     image.jpeg_file_names = [os.path.join(DataNightString, '{}.jpg'.format(RawBasename))]
 
     if not image.image_WCS:      ## If no WCS found in header ...
-        print(image.working_file)
         image.solve_astrometry() ## Solve Astrometry
         image.read_header()       ## Refresh Header
 
-    image.new_make_JPEG('test.jpg', binning=2, transform='flip_vertical')
-    sys.exit(0)
-
-
     image.determine_pointing_error()  ## Calculate Pointing Error
     image.run_SExtractor()           ## Run SExtractor
-    image.determine_FWHM()           ## Determine FWHM from SExtractor results
 
 #     image.run_SCAMP(catalog='UCAC-3')
 #     image.run_SWarp()
 #     image.read_header()           ## Extract values from header
 #     image.get_local_UCAC4(local_UCAC_command="/Users/joshw/Data/UCAC4/access/u4test", local_UCAC_data="/Users/joshw/Data/UCAC4/u4b")
 #     image.run_SExtractor(assoc=True)
-#     image.determine_FWHM()       ## Determine FWHM from SExtractor results
 
-#     image.make_PSF_plot()
+    image.determine_FWHM()       ## Determine FWHM from SExtractor results
+    image.make_PSF_plot()
+
+    cropped_JPEG = image.raw_file_basename+"_crop.jpg"
+    image.new_make_JPEG(cropped_JPEG,\
+                        mark_pointing=True,\
+                        mark_detected_stars=False,\
+                        mark_catalog_stars=False,\
+                        crop=(int(image.nXPix/2)-1024, int(image.nYPix/2)-1024, int(image.nXPix/2)+1024, int(image.nYPix/2)+1024),
+                        transform='flip_vertical')
+
     image.clean_up()                 ## Cleanup (delete) temporary files.
     image.calculate_process_time()    ## Calculate how long it took to process this image
     fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "nStars", "ProcessTime"]
