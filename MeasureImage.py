@@ -139,7 +139,7 @@ def main():
                             'SATUR_LEVEL': 30000.,
                             'FILTER': 'N',
                             }
-    tel.distortionOrder = 5
+    tel.distortion_order = 5
     tel.pointing_marker_size = 15*u.arcmin
     ## Define Site (ephem site object)
     tel.site = ephem.Observer()
