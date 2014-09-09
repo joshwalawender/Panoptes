@@ -17,6 +17,7 @@ import time
 from argparse import ArgumentParser
 
 import IQMon
+import MeasureImage
 
 help_message = '''
 The help message goes here.
@@ -86,7 +87,10 @@ def main():
                 IsMatch = MatchFilename.match(File)
                 if IsMatch:
                     filenumber = IsMatch.group(1)
-                    imtype = GetImtype(os.path.join(ImagesDirectory, File))
+                    try:
+                        imtype = GetImtype(os.path.join(ImagesDirectory, File))
+                    except:
+                        imtype = None
                     if imtype and imtype == "OBJECT":
                         Properties.append([filenumber, File])
 
@@ -99,17 +103,26 @@ def main():
                     TimeString = time.strftime("%Y/%m/%d %H:%M:%S UT -", now)
                     DateString = time.strftime("%Y%m%dUT", now)
 
-                    ProcessCall = ['python2.7', os.path.join(os.path.expanduser('~'), 'git', 'Panoptes', 'MeasureImage.py')]
                     if args.clobber and Image == SortedImageFiles[0]:
-                        ProcessCall.append("--clobber")
-                    ProcessCall.append(os.path.join(ImagesDirectory, Image))
-                    print("{} Calling MeasureImage.py with {}".format(TimeString, ProcessCall))
-                    try:
-                        MIoutput = subprocess.check_output(ProcessCall, stderr=subprocess.STDOUT)
-                        for line in MIoutput.split("\n"):
-                            print(line)
-                    except:
-                        print("Call to MeasureImage.py Failed: {0} {1} {2}".format(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2]))
+                        clobber = True
+                    else:
+                        clobber = False
+                    MeasureImage.MeasureImage(os.path.join(ImagesDirectory, Image), clobber=clobber)
+
+#                     ProcessCall = ['python2.7', os.path.join(os.path.expanduser('~'), 'git', 'Panoptes', 'MeasureImage.py')]
+#                     if args.clobber and Image == SortedImageFiles[0]:
+#                         ProcessCall.append("--clobber")
+#                     ProcessCall.append(os.path.join(ImagesDirectory, Image))
+#                     print("{} Calling MeasureImage.py with {}".format(TimeString, repr(ProcessCall)))
+#                     MIoutput = subprocess.check_output(ProcessCall, stderr=subprocess.STDOUT)
+#                     for line in MIoutput.split("\n"):
+#                         print(line)
+#                     try:
+#                         MIoutput = subprocess.check_output(ProcessCall, stderr=subprocess.STDOUT)
+#                         for line in MIoutput.split("\n"):
+#                             print(line)
+#                     except:
+#                         print("Call to MeasureImage.py Failed: {0} {1} {2}".format(sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2]))
         else:
             print("No image files found in directory: {}".format(ImagesDirectory))
     else:

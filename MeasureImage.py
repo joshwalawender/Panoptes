@@ -81,29 +81,12 @@ def ReadSkycamInfo(RawFile, FitsFile):
 ##-------------------------------------------------------------------------
 ## Main Program
 ##-------------------------------------------------------------------------
-def main():
-    ##-------------------------------------------------------------------------
-    ## Parse Command Line Arguments
-    ##-------------------------------------------------------------------------
-    ## create a parser object for understanding command-line arguments
-    parser = ArgumentParser(description="Describe the script")
-    ## add flags
-    parser.add_argument("-v", "--verbose",
-        action="store_true", dest="verbose",
-        default=False, help="Be verbose! (default = False)")
-    parser.add_argument("-c", "--clobber",
-        action="store_true", dest="clobber",
-        default=False, help="Delete previous logs and summary files for this image. (default = False)")
-    ## add arguments
-    parser.add_argument("filename",
-        type=str,
-        help="File Name of Input Image File")
-    args = parser.parse_args()
+def MeasureImage(filename, clobber=False, verbose=False):
     
     ##-------------------------------------------------------------------------
     ## Deconstruct input filename in to path, filename and extension
     ##-------------------------------------------------------------------------
-    RawFile = os.path.abspath(args.filename)
+    RawFile = os.path.abspath(filename)
     if not os.path.exists(RawFile):
         raise IOError("Unable to find input file: %s" % RawFile)
     RawFileDirectory, RawFilename = os.path.split(RawFile)
@@ -139,30 +122,25 @@ def main():
                             'SATUR_LEVEL': 30000.,
                             'FILTER': 'N',
                             }
-    tel.distortion_order = 5
     tel.pointing_marker_size = 15*u.arcmin
     ## Define Site (ephem site object)
     tel.site = ephem.Observer()
     tel.check_units()
     tel.define_pixel_scale()
 
-    ##-------------------------------------------------------------------------
-    ## Create IQMon.Image Object
-    ##-------------------------------------------------------------------------
-    image = IQMon.Image(args.filename, tel=tel)  ## Create image object
 
     ##-------------------------------------------------------------------------
     ## Create Filenames
     ##-------------------------------------------------------------------------
-    path_log = os.path.join(os.path.expanduser('~'), 'IQMon', 'Logs')
-    path_plots = os.path.join(os.path.expanduser('~'), 'IQMon', 'Plots')
+    path_log = os.path.join(os.path.expanduser('~joshw'), 'IQMon', 'Logs')
+    path_plots = os.path.join(os.path.expanduser('~joshw'), 'IQMon', 'Plots')
     IQMonLogFileName = os.path.join(path_log, DataNightString+"_"+tel.name+"_IQMonLog.txt")
     htmlImageList = os.path.join(path_log, DataNightString+"_"+tel.name+".html")
     summaryFile = os.path.join(path_log, DataNightString+"_"+tel.name+"_Summary.txt")
 
     if not os.path.exists(os.path.join(path_plots, DataNightString)):
         os.mkdir(os.path.join(path_plots, DataNightString))
-    if args.clobber:
+    if clobber:
         if os.path.exists(IQMonLogFileName): os.remove(IQMonLogFileName)
         if os.path.exists(htmlImageList): os.remove(htmlImageList)
         if os.path.exists(summaryFile): os.remove(summaryFile)
@@ -171,51 +149,74 @@ def main():
     ##-------------------------------------------------------------------------
     ## Perform Actual Image Analysis
     ##-------------------------------------------------------------------------
-    image.make_logger(IQMonLogFileName, args.verbose)
-    image.logger.info("###### Processing Image:  %s ######", args.filename)
-    image.read_image()
-    image.logger.info("Reading info file created by skycam.c")
-    ReadSkycamInfo(RawFile, image.working_file)
-    image.read_header()
+#     image = IQMon.Image(filename, tel=tel)
+    with IQMon.Image(filename, tel=tel) as image:
+        image.make_logger(IQMonLogFileName, verbose)
+        image.logger.info("###### Processing Image:  %s ######", filename)
+        image.read_image()
+        image.logger.info("Reading info file created by skycam.c")
+        try:
+            ReadSkycamInfo(RawFile, image.working_file)
+        except:
+            pass
+        image.read_header()
 
-    FullFrameJPEG = os.path.join(DataNightDirectory, DataNightString, 'JPEG', '{}.jpeg'.format(RawFilename))
-    FullFrameSymLink = os.path.join(path_plots, DataNightString, '{}.jpg'.format(RawBasename))
-    image.logger.info("Creating full frame jpeg symlink to {}".format(FullFrameJPEG))
-    if os.path.exists(FullFrameJPEG) and not os.path.exists(FullFrameSymLink):
-        image.logger.info("Creating symlink to skycam.c jpeg.")
-        os.symlink(FullFrameJPEG, FullFrameSymLink)
-    image.jpeg_file_names = [os.path.join(DataNightString, '{}.jpg'.format(RawBasename))]
+        FullFrameJPEG = os.path.join(DataNightDirectory, DataNightString, 'JPEG', '{}.jpeg'.format(RawFilename))
+        FullFrameSymLink = os.path.join(path_plots, DataNightString, '{}.jpg'.format(RawBasename))
+        image.logger.info("Creating full frame jpeg symlink to {}".format(FullFrameJPEG))
+        if os.path.exists(FullFrameJPEG) and not os.path.exists(FullFrameSymLink):
+            image.logger.info("Creating symlink to skycam.c jpeg.")
+            os.symlink(FullFrameJPEG, FullFrameSymLink)
+        image.jpeg_file_names = [os.path.join(DataNightString, '{}.jpg'.format(RawBasename))]
 
-    if not image.image_WCS:      ## If no WCS found in header ...
-        image.solve_astrometry() ## Solve Astrometry
-        image.read_header()       ## Refresh Header
+        if not image.image_WCS:      ## If no WCS found in header ...
+            image.solve_astrometry() ## Solve Astrometry
+            image.read_header()       ## Refresh Header
 
-    image.determine_pointing_error()  ## Calculate Pointing Error
-    image.run_SExtractor()           ## Run SExtractor
+        image.determine_pointing_error()  ## Calculate Pointing Error
+        image.run_SExtractor()           ## Run SExtractor
 
-#     image.run_SCAMP(catalog='UCAC-3')
-#     image.run_SWarp()
-#     image.read_header()           ## Extract values from header
-#     image.get_local_UCAC4(local_UCAC_command="/Users/joshw/Data/UCAC4/access/u4test", local_UCAC_data="/Users/joshw/Data/UCAC4/u4b")
-#     image.run_SExtractor(assoc=True)
+    #     image.run_SCAMP(catalog='UCAC-3')
+    #     image.run_SWarp()
+    #     image.read_header()           ## Extract values from header
+    #     image.get_local_UCAC4(local_UCAC_command="/Users/joshw/Data/UCAC4/access/u4test", local_UCAC_data="/Users/joshw/Data/UCAC4/u4b")
+    #     image.run_SExtractor(assoc=True)
 
-    image.determine_FWHM()       ## Determine FWHM from SExtractor results
-    image.make_PSF_plot()
+        image.determine_FWHM()       ## Determine FWHM from SExtractor results
+        image.make_PSF_plot()
 
-    cropped_JPEG = image.raw_file_basename+"_crop.jpg"
-    image.new_make_JPEG(cropped_JPEG,\
+        cropped_JPEG = image.raw_file_basename+"_crop.jpg"
+        image.make_JPEG(cropped_JPEG,\
                         mark_pointing=True,\
                         mark_detected_stars=True,\
                         mark_catalog_stars=False,\
                         crop=(int(image.nXPix/2)-1024, int(image.nYPix/2)-1024, int(image.nXPix/2)+1024, int(image.nYPix/2)+1024),
                         transform='flip_vertical')
 
-    image.clean_up()                 ## Cleanup (delete) temporary files.
-    image.calculate_process_time()    ## Calculate how long it took to process this image
-    fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "nStars", "ProcessTime"]
-    image.add_web_log_entry(htmlImageList, fields=fields) ## Add line for this image to HTML table
-    image.add_summary_entry(summaryFile)  ## Add line for this image to text table
-    
+#         image.clean_up()                 ## Cleanup (delete) temporary files.
+        image.calculate_process_time()    ## Calculate how long it took to process this image
+        fields=["Date and Time", "Filename", "Target", "ExpTime", "Alt", "Az", "Airmass", "MoonSep", "MoonIllum", "FWHM", "ellipticity", "Background", "PErr", "PosAng", "nStars", "ProcessTime"]
+        image.add_web_log_entry(htmlImageList, fields=fields) ## Add line for this image to HTML table
+        image.add_summary_entry(summaryFile)  ## Add line for this image to text table
+
 
 if __name__ == '__main__':
-    main()
+    ##-------------------------------------------------------------------------
+    ## Parse Command Line Arguments
+    ##-------------------------------------------------------------------------
+    ## create a parser object for understanding command-line arguments
+    parser = ArgumentParser(description="Describe the script")
+    ## add flags
+    parser.add_argument("-v", "--verbose",
+        action="store_true", dest="verbose",
+        default=False, help="Be verbose! (default = False)")
+    parser.add_argument("-c", "--clobber",
+        action="store_true", dest="clobber",
+        default=False, help="Delete previous logs and summary files for this image. (default = False)")
+    ## add arguments
+    parser.add_argument("filename",
+        type=str,
+        help="File Name of Input Image File")
+    args = parser.parse_args()
+    ##
+    MeasureImage(args.filename, clobber=args.clobber, verbose=args.verbose)
